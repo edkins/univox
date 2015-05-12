@@ -10,17 +10,37 @@ var next_prob = [
 	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
 ];
 
+var bar_complexity = [
+	// little movement, mid-register singing
+	(dur:1, movement:1, range:2, complex:0),   // 27
+	(dur:1, movement:1, range:2, complex:1),   // 28
+	(dur:1, movement:3, range:2, complex:1),   // 29
+	// growth and development, patterns and range expansion
+	(dur:1, movement:3, range:6, complex:2),   // 30
+	(dur:1, movement:3, range:12,complex:3),   // 31
+	(dur:1, movement:4, range:12,complex:4),   // 32
+	(dur:1, movement:5, range:12,complex:5),   // 33
+	// peak of solo, high range or alternating very big intervals
+	(dur:1, movement:8, range:12,complex:6),   // 34
+	(dur:1, movement:8, range:12,complex:6),   // 35
+	(dur:1, movement:8, range:12,complex:6),   // 36
+	(dur:1, movement:8, range:12,complex:6),   // 37
+	// slowing down, low register to audible low rumble
+	(dur:1, movement:1, range:2, complex:1),   // 38
+	(dur:1, movement:0, range:0, complex:0),   // 38
+];
+
 var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/composite mezzo.wav');
 
 var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5|
 	//if(degree <= -8, {
-	Out.ar(0, PlayBuf.ar(2, buf.bufnum, 1, 1, (4*(degree+16).min(24).max(0)+0.5)*44100) * 0.3 *
-		EnvGen.kr(Env.linen(0.01, sustain, 0.01), doneAction:2))
+	Out.ar(0, PlayBuf.ar(2, buf.bufnum, 1, 1, (4*(degree+16).min(24).max(0)+0.5)*44100) * amp *
+		EnvGen.kr(Env.linen(0.01, sustain.min(1), 0.01), doneAction:2))
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1;
 	(instrument:\voices, stretch:4*60/56,scale:[0,1,4,5,7,8,9,11],root:8,
-	dur:dur, amp:amp * 2, degree: degree, legato:1)
+	dur:dur, amp:amp, degree: degree, legato:1)
 };
 
 var bar_params = {arg bar;
@@ -62,52 +82,37 @@ var modify = {arg state, bar;
 	('build':build, 'down':down)[bar_params.value(bar)].value(state)
 };
 
-var jump = {arg d, min, max, j;
+var jump = {arg d, min, max, movement;
 	var probs;
-	probs = (-8..8).collect({arg i; if((d+i >= min).and(d+i <= max), next_prob[d % 8][i+8], 0)});
+	probs = (-8..8).collect({arg i; if((d+i >= min).and(d+i <= max).and(i.abs <= movement), next_prob[d % 8][i+8], 0)});
 	d = d + (-8..8).wchoose(probs.normalizeSum);
 	if (d > max, {d = d * 0.5 + (max * 0.5)});
 	if (d < min, {d = d * 0.5 + (min * 0.5)});
 	d.asInteger
 };
 
-var ajump = {arg a, j;
-	(a + (2*j).rand - j).max(0.05).min(0.2)
+var do_bar = {arg d, complexity;
+	var min = (-4 - complexity.range).max(-16);
+	var max = (-4 + complexity.range).min(8);
+	var t = 0;
+	while ({t < complexity.dur}, {
+		var dur = complexity.dur;
+		var amp = 0.1;
+		if (complexity.complex >= 1, {dur = dur / 4});
+		if (complexity.complex >= 2, {amp = 2 * amp.rand});
+		if (complexity.complex >= 4, {amp = [0,1,1,1,1].choose * amp});
+		if (complexity.complex >= 6, {dur = dur.rand});
+		dur = dur.min(complexity.dur - t);
+		note.value(d, dur, amp).yield;
+		d = jump.value(d, min, max, complexity.movement);
+		t = t + dur;
+	});
+	d
 };
 
-
-var rhythm = {arg speed, complexity;
-	var dur = 0.5/speed;
-	(speed.collect{
-			[
-				[dur, dur],
-				[dur * 0.5, dur * 0.5, dur * 0.5, dur * 0.5],
-				[dur * 1.5, dur * 0.5],
-				[dur * 0.5, dur * 1.5]
-			][(complexity+1).rand]
-	}).flatten
+var tune = p{
+	var d = -4;
+	(27..38).do{arg bar; bar.postln; d = do_bar.value(d, bar_complexity[bar-27])}
 };
-
-var state_machine = {arg state;
-	var r = rhythm.value(state.speed, state.rhythm_complexity);
-	r.do {arg dur;
-		state.d = jump.value(state.d, state.min, state.max, state.jump);
-		state.a = ajump.value(state.a, state.ajump);
-		note.value(state.d, dur, state.a).yield;
-}};
-
-var bars_pattern = {arg bars;
-	var state = (d:0, a:0.1, min:-16, max:8, speed:2, jump:0, ajump:0, rhythm_complexity:0);
-	p{
-		bars.do	{arg bar;
-			bar.post;
-			state.postln;
-			modify.value(state, bar);
-			state_machine.value(state);
-		}
-	};
-};
-
-var tune = bars_pattern.value((27..38));
 
 tune.play;
