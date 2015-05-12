@@ -1,14 +1,26 @@
+var next_prob = [
+//  -oct                                     same                                    +oct
+	[3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 5.0, 3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 6.0, 3.0],
+	[3.0, 5.0, 5.0, 8.0, 5.0, 8.0, 3,  10.0, 3.0, 5.0, 5.0, 8.0, 5.0, 8.0, 6.0,10.0, 3.0],
+	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+];
+
 var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/composite mezzo.wav');
 
 var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5|
 	//if(degree <= -8, {
-	Out.ar(0, PlayBuf.ar(2, buf.bufnum, 1, 1, (4*(degree+16).min(24).max(0)+8)*44100+0.5) * 0.3 *
+	Out.ar(0, PlayBuf.ar(2, buf.bufnum, 1, 1, (4*(degree+16).min(24).max(0)+0.5)*44100) * 0.3 *
 		EnvGen.kr(Env.linen(0.01, sustain, 0.01), doneAction:2))
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1;
 	(instrument:\voices, stretch:4*60/56,scale:[0,1,4,5,7,8,9,11],root:8,
-	dur:dur, amp:amp * 2, degree: degree)
+	dur:dur, amp:amp * 2, degree: degree, legato:1)
 };
 
 var bar_params = {arg bar;
@@ -29,7 +41,7 @@ var bar_params = {arg bar;
 };
 
 var build = {arg state;
-	2.do {
+	/*2.do {
 		[
 			{state.min = (state.min - 1).max(-16)},
 			{state.max = (state.max + 1).max(16)},
@@ -38,7 +50,8 @@ var build = {arg state;
 			{state.ajump = (state.ajump + 0.05).max(0.2)},
 			{state.rhythm_complexity = (state.rhythm_complexity + 1).min(4)}
 		].choose.value
-}};
+	}*/
+};
 
 var down = {arg state;
 	state.min = (state.min * 0.5) + (-16 * 0.5);
@@ -50,9 +63,9 @@ var modify = {arg state, bar;
 };
 
 var jump = {arg d, min, max, j;
-	var dir = [1,-1].choose;
-	var amount = [1,2,3,4].wchoose([1, j, j * j, j * j * j].normalizeSum);
-	d = dir * amount + d;
+	var probs;
+	probs = (-8..8).collect({arg i; if((d+i >= min).and(d+i <= max), next_prob[d % 8][i+8], 0)});
+	d = d + (-8..8).wchoose(probs.normalizeSum);
 	if (d > max, {d = d * 0.5 + (max * 0.5)});
 	if (d < min, {d = d * 0.5 + (min * 0.5)});
 	d.asInteger
@@ -84,7 +97,7 @@ var state_machine = {arg state;
 }};
 
 var bars_pattern = {arg bars;
-	var state = (d:0, a:0.1, min:-3, max:0, speed:2, jump:0, ajump:0, rhythm_complexity:0);
+	var state = (d:0, a:0.1, min:-16, max:8, speed:2, jump:0, ajump:0, rhythm_complexity:0);
 	p{
 		bars.do	{arg bar;
 			bar.post;
