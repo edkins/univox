@@ -1,0 +1,1 @@
+gcc pitch_correct.c -lm -Wall -Werror && ./a.out "TARA Mezzo" -8
