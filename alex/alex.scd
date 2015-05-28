@@ -1,3 +1,5 @@
+var w = Window.new.front;
+
 var next_prob = [
 //  -oct                                     same                                    +oct
 	[3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 5.0, 3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 6.0, 3.0],
@@ -120,9 +122,48 @@ var do_bar = {arg d, complexity;
 
 var tune = p{
 	var d = -4;
+
 	bar_complexity.do{arg complex; complex.postln; d = do_bar.value(d, complex)}
 };
 
-//tune = p{(-16..8).do{arg i; note.value(i,1).yield}};
+var create_draw_func = {|note|
+	{
+	Pen.color = Color.green(rrand(0.0, 1), rrand(0.0, 0.5));
+    Pen.addRect(
+            Rect(20, 20, (w.bounds.width-40).rand, (w.bounds.height-40).rand)
+        );
+    Pen.perform([\stroke, \fill].choose);
+	}
+};
 
+var play_with_graphics = {|t|
+	var ok = true;
+	var stream = t.asStream;
+	while({ok},
+	{
+		var next = stream.next;
+			if (next == nil, {ok = false}, {next.play;
+				w.drawFunc = create_draw_func.value(next);
+				(next.dur*next.stretch).wait
+			});
+	})
+};
+
+var redraw_func = {
+    5.do{
+        // set the Color
+        Pen.color = Color.green(rrand(0.0, 1), rrand(0.0, 0.5));
+        Pen.addRect(
+            Rect(20, 20, (w.bounds.width-40).rand, (w.bounds.height-40).rand)
+        );
+        Pen.perform([\stroke, \fill].choose);
+    }};
+
+var view = UserView(w);
+view.drawFunc = redraw_func;
+view.animate = true;
+view.frameRate = 60;
+
+//{play_with_graphics.value(tune)}.asRoutine.play;
+//fork {play_with_graphics.value(tune)};
 tune.play;
