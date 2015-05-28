@@ -12,17 +12,17 @@ var next_prob = [
 
 var bar_complexity = [
 	// little movement, mid-register singing
-	(dur:2, movement:1, range:2, complex:0),   // 27
-	(dur:2, movement:1, range:2, complex:1),   // 28
+	(dur:2, movement:1, range:2, speed: 2, complex:0),   // 27
+	(dur:2, movement:1, range:2, speed: 4, complex:1),   // 28
 	(dur:2, movement:3, range:2, complex:1),   // 29
 	// growth and development, patterns and range expansion
-	(dur:2, movement:3, range:6, complex:2),   // 30
-	(dur:2, movement:3, range:12,complex:3),   // 31
-	(dur:2, movement:4, range:12,complex:4),   // 32
-	(dur:2, movement:5, range:12,complex:4),   // 33
+	(dur:2, movement:3, range:6, complex:2, flurries:0.2),   // 30
+	(dur:2, movement:3, range:12,complex:3, flurries:0.2),   // 31
+	(dur:2, movement:4, range:12,complex:4, flurries:0.2),   // 32
+	(dur:2, movement:5, range:12,complex:4, flurries:0.2),   // 33
 	// peak of solo, high range or alternating very big intervals
-	(dur:1, movement:8, range:12,complex:5),   // 34
-	(dur:1, movement:8, range:12,complex:5),   // 35
+	(dur:1, movement:8, range:12,complex:5, flurries:0.2),   // 34
+	(dur:1, movement:8, range:12,complex:5, flurries:0.2),   // 35
 	(dur:1, movement:8, range:12,complex:6, flurries:0.2),   // 36
 	(dur:1, movement:8, range:12,complex:6, flurries:0.5),   // 37
 	// slowing down, low register to audible low rumble
@@ -38,8 +38,13 @@ var voice_start = 1;
 
 var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, amp_end = 0.5|
 	var env = Env.new([0, amp, amp_end, 0], [0.01, sustain - 0.05, 0.01]);
-	var rate = LFPulse.kr(1, 0, 0.5, 2, -1);
-	Out.ar(0, PlayBuf.ar(2, buf.bufnum, rate, 1, (voice_gap*(degree+16).min(24).max(0)+voice_start)*44100) * 40 * EnvGen.kr(env), doneAction:2)
+	var start = (voice_gap*(degree+16).min(24).max(0)+voice_start)*44100;
+	var phase0 = LFTri.ar(1,0,0.25*44100,start);
+	var env0 = SinOsc.kr(1.0, 1.57);
+	var phase1 = LFTri.ar(1,1,0.25*44100,start);
+	var env1 = SinOsc.kr(1.0, 0);
+	var bufrd = (BufRd.ar(2, buf.bufnum, phase0) * env0) + (BufRd.ar(2, buf.bufnum, phase1) * env1);
+	Out.ar(0, bufrd * 40 * EnvGen.kr(env), doneAction:2)
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1, amp_end=0.1, legato=1;
@@ -83,7 +88,6 @@ var do_bar = {arg d, complexity;
 			max = (-4 + complexity.range).min(8);
 	});
 	t = 0;
-	amp = 0.01;
 	prev_d = d;
 	while ({t < complexity.dur}, {
 		var dur = complexity.dur;
@@ -92,11 +96,14 @@ var do_bar = {arg d, complexity;
 		var amp_mul = 1;
 		var legato = 1;
 		prev_d = d;
-		dur = 1/4;
+		amp = 0.01;
+		amp_end = amp;
+		dur = if(complexity.speed != nil, {1/complexity.speed}, {1/4});
 		if (complexity.complex >= 1, {dur = [1/2,1,2].choose * dur});
 		if (complexity.complex <= 4, {dur = tweak_dur.value(dur, t)});
 		if ((complexity.flurries != nil).and{1.0.rand < complexity.flurries}, {dur = 1/32});
-		if (complexity.complex >= 2, {
+		if ((complexity.complex >= 2).and(1.0.rand < 0.2), {
+			amp = 0.02.rand;
 			amp_end = 0.02.rand;
 		});
 		if (complexity.complex >= 3, {legato = 0.75 + 0.25.rand});
@@ -107,7 +114,6 @@ var do_bar = {arg d, complexity;
 		note.value(d, dur, amp * amp_mul, amp_end * amp_mul, legato).yield;
 		d = jump.value(prev_d, prev_prev_d, min, max, complexity.movement);
 		t = t + dur;
-		amp = amp_end;
 	});
 	d
 };
