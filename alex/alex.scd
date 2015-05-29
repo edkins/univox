@@ -1,6 +1,7 @@
+var graphics = true;
 var ww = 1920;
 var wh = 1080;
-var w = Window.new(bounds:Rect(0,0,ww,wh)).front;
+var w;
 var colour = 0;
 var circle_radius = 0;
 var cw = 64;
@@ -49,8 +50,8 @@ var bar_complexity = [
 /*var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/composite mezzo.wav');
 var voice_gap = 4;
 var voice_start = 0.5;*/
-//var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice forte.wav');
-var buf = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice forte.wav');
+var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice forte.wav');
+//var buf = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice forte.wav');
 
 var voice_gap = 3;
 var voice_start = 1;
@@ -318,12 +319,15 @@ cw.do {|x|
 	}
 };
 
-view = UserView(w, Rect(0,0,ww,wh));
-view.clearOnRefresh = false;
-view.drawFunc = redraw_func;
-view.animate = true;
-view.frameRate = 14;
-view.keyDownAction = key_down;
+if (graphics, {
+	w = Window.new(bounds:Rect(0,0,ww,wh)).front;
+	view = UserView(w, Rect(0,0,ww,wh));
+	view.clearOnRefresh = false;
+	view.drawFunc = redraw_func;
+	view.animate = true;
+	view.frameRate = 14;
+	view.keyDownAction = key_down;
 
-//{play_with_graphics.value(tune)}.asRoutine.play;
-//fork {play_with_graphics.value(tune)};
+	//{play_with_graphics.value(tune)}.asRoutine.play;
+	//fork {play_with_graphics.value(tune)};
+}, {tune.play});
