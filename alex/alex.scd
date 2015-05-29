@@ -31,15 +31,15 @@ var bar_complexity = [
 	(dur:2, movement:2, range:8, speed: 4, complex:1),   // 28
 	(dur:2, movement:3, range:10, complex:1),   // 29
 	// growth and development, patterns and range expansion
-	(dur:2, movement:3, range:12, complex:2, flurries:0.2),   // 30
-	(dur:2, movement:3, range:12,complex:3, flurries:0.2),   // 31
-	(dur:2, movement:4, range:12,complex:4, flurries:0.2),   // 32
-	(dur:2, movement:5, range:12,complex:4, flurries:0.2),   // 33
+	(dur:2, movement:3, range:12, complex:2, flurries:0.2, bias:1),   // 30
+	(dur:2, movement:3, range:12,complex:3, flurries:0.2, bias:-1),   // 31
+	(dur:2, movement:4, range:12,complex:4, flurries:0.2, bias:-1),   // 32
+	(dur:2, movement:5, range:12,complex:4, flurries:0.2, bias:-1),   // 33
 	// peak of solo, high range or alternating very big intervals
-	(dur:1, movement:8, range:12,complex:5, flurries:0.2),   // 34
-	(dur:1, movement:8, range:12,complex:5, flurries:0.2),   // 35
-	(dur:1, movement:8, range:12,complex:6, flurries:0.2),   // 36
-	(dur:1, movement:8, range:12,complex:6, flurries:0.5),   // 37
+	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1),   // 34
+	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1),   // 35
+	(dur:1, movement:8, range:12,complex:6, flurries:0.2, bias:1),   // 36
+	(dur:1, movement:8, range:12,complex:6, flurries:0.5, bias:-1),   // 37
 	// slowing down, low register to audible low rumble
 	(dur:2, movement:3, min:-16,max:-5, complex:2, flurries:0.7),   // 38
 	(dur:2, movement:1, min:-16,max:-13, complex:2, flurries:0.8),   // also 38
@@ -72,7 +72,7 @@ var note = {arg degree, dur=1/16, amp=0.1, amp_middle=0.1, amp_end=0.1, legato=1
 	dur:dur, amp:amp, amp_middle:amp_middle, amp_end:amp_end, degree: degree, legato:legato)
 };
 
-var jump = {arg d, prev_d, min, max, movement;
+var jump = {arg d, prev_d, min, max, movement, bias_direction;
 	var probs;
 	var nonzero = false;
 	probs = (-8..8).collect({arg i;
@@ -81,7 +81,13 @@ var jump = {arg d, prev_d, min, max, movement;
 		ok = ok.and(d + i <= max);
 		ok = ok.and(i.abs <= movement);
 		ok = ok.and((i != 0).or(d != prev_d));  // avoid three identical notes in a row
-		if(ok, {nonzero = true; next_prob[d % 8][i+8]}, 0)});
+		if(ok, {
+			var prob = next_prob[d % 8][i+8];
+			if (bias_direction == i.sign, {prob = prob * 2});
+			nonzero = true;
+			prob
+		}, 0)
+	});
 	if (nonzero,
 	{
 		d = d + (-8..8).wchoose(probs.normalizeSum);
@@ -108,6 +114,7 @@ var do_bar = {arg d, complexity;
 			max = (-4 + complexity.range).min(8);
 	});
 	t = 0;
+	//if (d > -4, {d = d - 8},{d = d + 8});
 	prev_d = d;
 	prev_legato = 1;
 	while ({t < complexity.dur}, {
@@ -117,6 +124,7 @@ var do_bar = {arg d, complexity;
 		var prev_prev_d = prev_d;
 		var amp_mul = 1;
 		var legato = 1;
+		var bias_direction = complexity.bias;
 		prev_d = d;
 		amp = 0.01;
 		amp_end = amp;
@@ -136,7 +144,7 @@ var do_bar = {arg d, complexity;
 		//if (complexity.complex >= 6, {dur = dur * 0.25 + (dur.rand * 0.75)});
 		if (dur > 0.25, {amp_middle = amp_middle * 2});
 		note.value(d, dur, amp * amp_mul, amp_middle * amp_mul, amp_end * amp_mul, legato).yield;
-		d = jump.value(prev_d, prev_prev_d, min, max, complexity.movement);
+		d = jump.value(prev_d, prev_prev_d, min, max, complexity.movement, bias_direction);
 		t = t + dur;
 		prev_legato = legato;
 	});
@@ -173,12 +181,12 @@ var play_with_graphics = {|t|
 	})
 };
 
-var palette = {|degree|
-	if (degree < -8, {Color.new(1, (degree+16)/8, 0)  //red to yellow
+var palette = {|degree, alpha=1|
+	if (degree < -8, {Color.new(1, (degree+16)/8, 0, alpha)  //red to yellow
 		},{
-		if (degree < 0, {Color.new((0-degree)/8,1,(8+degree)/8)  //yellow to cyan
+		if (degree < 0, {Color.new((0-degree)/8,1,(8+degree)/8, alpha)  //yellow to cyan
 			},{
-			Color.new(0,(8-degree)/8,1)  //cyan to blue
+			Color.new(0,(8-degree)/8,1, alpha)  //cyan to blue
 })})
 };
 
@@ -269,6 +277,7 @@ var tree_redraw_func = {
     // set the Color
 	var cx = ww/2;
 	var cy = wh/2;
+	var intensity = 1;
 
 	if (first_time, {
 		Pen.color = Color.black;
@@ -277,7 +286,9 @@ var tree_redraw_func = {
 		first_time = false;
 	});
 
-	Pen.color = palette.value(colour);
+	if (final_fade, {intensity = 0.1});
+
+	Pen.color = palette.value(colour, intensity);
        Pen.strokeOval(
             Rect(cx - circle_radius, cy - circle_radius, 2 * circle_radius, 2 * circle_radius)
     );
@@ -295,7 +306,7 @@ var final_fade_redraw_func = {
 };
 
 var redraw_func = {
-	if (final_fade, final_fade_redraw_func,
+	if (final_fade, {final_fade_redraw_func.value; tree_redraw_func.value},
 		{if (tree, tree_redraw_func, cellular_redraw_func)}
 	)
 };
