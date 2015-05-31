@@ -1,4 +1,4 @@
-var graphics = false;
+var graphics = true;
 var ww = 1920;
 var wh = 1080;
 var w;
@@ -331,13 +331,14 @@ cw.do {|x|
 		var amp = 0.02 + (0.02 * j);
 		note.value(i,0.5,amp,amp,amp).yield}}};*/
 if (graphics, {
-	w = Window.new(bounds:Rect(0,0,ww,wh)).front;
+	w = Window.new(bounds:Rect(1000,0,ww,wh)).front().fullScreen();
 	view = UserView(w, Rect(0,0,ww,wh));
 	view.clearOnRefresh = false;
 	view.drawFunc = redraw_func;
 	view.animate = true;
 	view.frameRate = 14;
 	view.keyDownAction = key_down;
+	view.focus(true);
 
 	//{play_with_graphics.value(tune)}.asRoutine.play;
 	//fork {play_with_graphics.value(tune)};
