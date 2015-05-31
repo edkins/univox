@@ -1,4 +1,4 @@
-var graphics = true;
+var graphics = false;
 var ww = 1920;
 var wh = 1080;
 var w;
@@ -16,14 +16,14 @@ var dropcount = 0;
 
 var next_prob = [
 //  -oct                                     same                                    +oct
-	[3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 5.0, 3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 6.0, 3.0],
-	[3.0, 5.0, 4.0, 9.0, 6.0, 4.0, 6.0, 5.0, 3.0, 5.0,10.0, 9.0, 6.0,10.0, 6.0, 6.0, 3.0],
-	[4.0, 6.0, 6.0, 7.0, 9.0, 4.0, 4.0, 5.0, 6.0, 4.0,10.0, 5.0, 6.0, 4.0, 7.0, 4.0, 9.0],
-	[3.0, 7.0, 4.0, 6.0, 7.0, 0.0, 6.0, 5.0, 8.0, 8.0,10.0, 2.0, 5.0,10.0, 6.0, 7.0, 6.0],
-	[3.0, 5.0,10.0, 9.0, 6.0, 4.0, 6.0, 5.0, 6.0, 5.0,10.0, 9.0, 3.0, 4.0, 6.0, 6.0, 3.0],
-	[4.0, 7.0,10.0, 9.0, 6.0, 4.0, 6.0, 5.0, 3.0, 5.0,10.0, 9.0, 6.0, 4.0, 2.0, 6.0, 4.0],
-	[5.0, 6.0,10.0, 5.0, 6.0, 5.0, 6.0, 5.0, 4.0, 7.0,10.0, 2.0, 6.0, 4.0, 8.0, 6.0, 5.0],
-	[5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9, 5.9],
+	[3.0, 5.0,10.0, 9.0, 6.0, 0,   4.0, 6.0, 3.0, 5.0,10.0, 9.0, 6.0, 0,   4.0, 6.0, 3.0],
+	[3.0, 5.0, 4.0, 9.0, 0,   6.0, 4.0, 5.0, 3.0, 5.0,10.0, 9.0, 0,   6.0,10.0, 6.0, 3.0],
+	[4.0, 6.0, 6.0, 0,   7.0, 9.0, 4.0, 5.0, 6.0, 4.0,10.0, 0,   5.0, 6.0, 7.0, 4.0, 9.0],
+	[3.0, 7.0, 0,   4.0, 6.0, 0.0, 6.0, 5.0, 8.0, 8.0, 0,  10.0, 2.0,10.0, 6.0, 7.0, 6.0],
+	[3.0, 0,   5.0,10.0, 6.0, 4.0, 6.0, 5.0, 6.0, 0,   5.0,10.0, 3.0, 4.0, 6.0, 6.0, 3.0],
+	[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, ],
+	[4.0, 7.0, 9.0, 6.0, 4.0, 6.0, 5.0, 0,   3.0, 5.0, 9.0, 6.0, 4.0, 2.0, 6.0, 0,   4.0],
+	[5.0,10.0, 5.0, 6.0, 5.0, 6.0, 0,   5.0, 4.0,10.0, 2.0, 6.0, 4.0, 8.0, 0,   6.0, 5.0],
 ];
 
 var bar_complexity = [
@@ -50,8 +50,8 @@ var bar_complexity = [
 /*var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/composite mezzo.wav');
 var voice_gap = 4;
 var voice_start = 0.5;*/
-var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice forte.wav');
-//var buf = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice forte.wav');
+//var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice forte.wav');
+var buf = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice forte.wav');
 
 var voice_gap = 3;
 var voice_start = 1;
@@ -69,6 +69,7 @@ var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, am
 
 var note = {arg degree, dur=1/16, amp=0.1, amp_middle=0.1, amp_end=0.1, legato=1;
 	colour = degree;
+	if (degree % 8 == 5, {"warning: E".postln});
 	(instrument:\voices, stretch:4*60/56,scale:[0,1,4,5,7,8,9,11],root:8,
 	dur:dur, amp:amp, amp_middle:amp_middle, amp_end:amp_end, degree: degree, legato:legato)
 };
