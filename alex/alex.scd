@@ -35,12 +35,12 @@ var bar_complexity = [
 	(dur:2, movement:3, range:12, complex:2, flurries:0.2, bias:1),   // 30
 	(dur:2, movement:3, range:12,complex:3, flurries:0.2, bias:-1),   // 31
 	(dur:2, movement:4, range:12,complex:4, flurries:0.2, bias:-1),   // 32
-	(dur:2, movement:5, range:12,complex:4, flurries:0.2, bias:-1),   // 33
+	(dur:2, movement:5, range:12,complex:4, flurries:0.2, bias:-1, loud:1),   // 33
 	// peak of solo, high range or alternating very big intervals
-	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1),   // 34
-	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1),   // 35
-	(dur:1, movement:8, range:12,complex:6, flurries:0.2, bias:1),   // 36
-	(dur:1, movement:8, range:12,complex:6, flurries:0.5, bias:-1),   // 37
+	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1, loud:2),   // 34
+	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1, loud:0),   // 35
+	(dur:1, movement:8, range:12,complex:6, flurries:0.2, bias:1, loud:2),   // 36
+	(dur:1, movement:8, range:12,complex:6, flurries:0.5, bias:-1, loud:1),   // 37
 	// slowing down, low register to audible low rumble
 	(dur:2, movement:3, min:-16,max:-5, complex:2, flurries:0.7),   // 38
 	(dur:2, movement:1, min:-16,max:-13, complex:2, flurries:0.8),   // also 38
@@ -52,19 +52,22 @@ var voice_gap = 4;
 var voice_start = 0.5;*/
 //var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice forte.wav');
 var buf = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice forte.wav');
+var bufp = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice piano.wav');
 
 var voice_gap = 3;
 var voice_start = 1;
 
 var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, amp_middle = 0.5, amp_end = 0.5|
-	var env = Env.new([0, amp, amp_middle, amp_end, 0], [0.01, sustain / 2 - 0.025, sustain / 2 - 0.025, 0.01]);
+	var actual_sustain = sustain.min(2);
+	var env = Env.new([0, amp, amp_middle, amp_end, 0], [0.01, actual_sustain / 2 - 0.025, actual_sustain / 2 - 0.025, 0.01]);
+	var e = (EnvGen.kr(env) - 0.03).max(0);
+	var ep = (EnvGen.kr(env) * 2).min(0.06 - EnvGen.kr(env) * 2).max(0);
 	var start = (voice_gap*(degree+16).min(24).max(0)+voice_start)*44100;
-	var phase0 = LFTri.ar(1,0,0.25*44100,start);
-	var env0 = SinOsc.kr(1.0, 1.57);
-	var phase1 = LFTri.ar(1,1,0.25*44100,start);
-	var env1 = SinOsc.kr(1.0, 0);
-	var bufrd = (BufRd.ar(2, buf.bufnum, phase0) * env0) + (BufRd.ar(2, buf.bufnum, phase1) * env1);
-	Out.ar(0, bufrd * 40 * EnvGen.kr(env), doneAction:2)
+	var phase = LFTri.ar(0.25,-1,44100,start);
+	var phasep = LFTri.ar(0.25,-1,44100,start);
+	var bufrd = BufRd.ar(2, buf.bufnum, phase);
+	var bufrdp = BufRd.ar(2, bufp.bufnum, phasep);
+	Out.ar(0, (bufrd * 40 * e) + (bufrdp * 40 * ep), doneAction:2)
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1, amp_middle=0.1, amp_end=0.1, legato=1;
@@ -108,7 +111,7 @@ var tweak_dur = {arg dur, t;
 };
 
 var do_bar = {arg d, complexity;
-	var min, max, t, amp, prev_d, prev_legato;
+	var min, max, t, amp, prev_d, prev_legato, prev_amp_mul;
 	if (complexity.min != nil,
 		{min = complexity.min; max = complexity.max},
 		{
@@ -119,6 +122,7 @@ var do_bar = {arg d, complexity;
 	//if (d > -4, {d = d - 8},{d = d + 8});
 	prev_d = d;
 	prev_legato = 1;
+	prev_amp_mul = 1;
 	while ({t < complexity.dur}, {
 		var dur = complexity.dur;
 		var amp_end = 0.01;
@@ -127,9 +131,12 @@ var do_bar = {arg d, complexity;
 		var amp_mul = 1;
 		var legato = 1;
 		var bias_direction = complexity.bias;
+		var amp_mul_target = 1;
 		prev_d = d;
 		amp = 0.01;
 		amp_end = amp;
+		if (complexity.loud != nil, {amp_mul_target = pow(2.0, complexity.loud)});
+		amp_mul = 0.5 * amp_mul + (0.5 * amp_mul_target);
 		dur = if(complexity.speed != nil, {1/complexity.speed}, {1/4});
 		if (complexity.complex >= 1, {dur = [1/2,1,2].choose * dur});
 		if (complexity.complex <= 4, {dur = tweak_dur.value(dur, t)});
@@ -319,7 +326,10 @@ cw.do {|x|
 		cells[x,y] = 1.0.rand;
 	}
 };
-
+/*tune = p{(-16..8).do{|i|
+	(0..2).do{|j|
+		var amp = 0.02 + (0.02 * j);
+		note.value(i,0.5,amp,amp,amp).yield}}};*/
 if (graphics, {
 	w = Window.new(bounds:Rect(0,0,ww,wh)).front;
 	view = UserView(w, Rect(0,0,ww,wh));
