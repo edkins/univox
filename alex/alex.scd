@@ -1,5 +1,6 @@
 var main = {
 var graphics = true;
+var prob_table = 1;  // 1: tendencies, 2: triads, 3: pattern
 var ww = 1920;
 var wh = 1080;
 var w;
@@ -16,17 +17,36 @@ var tree = false;
 var final_fade = false;
 var dropcount = 0;
 
-var next_prob = [
-//  -oct                                     same                                    +oct
-	[3.0, 5.0,10.0, 9.0, 6.0, 0,   4.0, 6.0, 3.0, 5.0,10.0, 9.0, 6.0, 0,   4.0, 6.0, 3.0],
-	[3.0, 5.0, 4.0, 9.0, 0,   6.0, 4.0, 5.0, 3.0, 5.0,10.0, 9.0, 0,   6.0,10.0, 6.0, 3.0],
-	[4.0, 6.0, 6.0, 0,   7.0, 9.0, 4.0, 5.0, 6.0, 4.0,10.0, 0,   5.0, 6.0, 7.0, 4.0, 9.0],
-	[3.0, 7.0, 0,   4.0, 6.0, 0.0, 6.0, 5.0, 8.0, 8.0, 0,  10.0, 2.0,10.0, 6.0, 7.0, 6.0],
-	[3.0, 0,   5.0,10.0, 6.0, 4.0, 6.0, 5.0, 6.0, 0,   5.0,10.0, 3.0, 4.0, 6.0, 6.0, 3.0],
-	[0,   1,   1,   1,   1,   1,   1,   1,   0,   1,   1,   1,   1,   1,   1,   1,   0, ],
-	[4.0, 7.0, 9.0, 6.0, 4.0, 6.0, 5.0, 0,   3.0, 5.0, 9.0, 6.0, 4.0, 2.0, 6.0, 0,   4.0],
-	[5.0,10.0, 5.0, 6.0, 5.0, 6.0, 0,   5.0, 4.0,10.0, 2.0, 6.0, 4.0, 8.0, 0,   6.0, 5.0],
-];
+var next_prob = [[],
+		[
+//-oct                                  same                                     +oct
+[10.0,10.0,30.0, 5.0,30.0, 0,  10.0,30.0,10.0,10.0,30.0, 5.0,30.0, 0,  10.0,30.0,10.0],
+[ 1.0, 2.0, 5.0, 5.0, 0,   5.0, 5.0,50.0, 2.0,30.0, 0,   5.0, 0,   5.0, 5.0, 5.0, 1.0],
+[10.0,10.0,10.0, 0,  10.0,10.0,10.0,10.0,10.0,10.0,10.0, 0,  10.0,10.0,10.0,10.0,10.0],
+[ 5.0, 5.0, 0,   5.0, 5.0, 5.0, 5.0,50.0, 5.0, 5.0, 0,   5.0, 5.0, 5.0, 5.0,50.0,10.0],
+[10.0, 0,  10.0,10.0,10.0,10.0,10.0,10.0,10.0, 0,  10.0,10.0,10.0,10.0,10.0,10.0,10.0],
+[ 0,   1,   1,   1,   1,   1,   1,   1,   0,   1,   1,   1,   1,   1,   1,   1,   0],
+[10.0,10.0,10.0,10.0,10.0,10.0,10.0, 0,  10.0,10.0,10.0,10.0,10.0,10.0,10.0, 0,  10.0],
+[10.0,50.0, 5.0, 5.0, 5.0, 5.0, 0.0, 5.0,10.0,50.0, 5.0, 5.0, 5.0, 5.0, 0,   5.0,10.0],
+		],[
+[ 5.0, 5.0,20.0, 5.0,20.0,  0,  5.0,20.0, 5.0, 5.0,20.0, 5.0,20.0, 0,   5.0,20.0, 5.0],
+[ 0.0, 5.0,20.0, 5.0, 0,  20.0, 5.0,50.0, 0,   0,  20.0, 5.0, 0,  20.0, 5.0, 5.0, 0.0],
+[ 5.0, 5.0,20.0, 0,   5.0,20.0,20.0, 5.0, 5.0, 5.0,20.0, 0,   5.0,20.0,20.0, 5.0, 5.0],
+[ 5.0,20.0, 0,   5.0,20.0, 5.0, 20.0,5.0, 5.0, 5.0, 0,  20.0, 5.0,20.0, 5.0,20.0, 5.0],
+[20.0, 0,   5.0,20.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0,   0,  20.0,20.0, 5.0, 5.0,20.0,20.0],
+[ 0,   1,   1,   1,   1,   1,   1,   1,   0,   1,   1,   1,   1,   1,   1,   1,   0],
+[ 0,   0,   0,   0,   0,   0,   0,   0,   5.0,20.0, 0,  20.0, 0,   0,   0,   0,   0],
+[ 5.0, 5.0,20.0, 0,  20.0,20.0,  0,  5.0, 5.0, 5.0,20.0, 5.0,20.0, 5.0, 0,  20.0, 5.0],
+		],[
+[ 5.0,10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0,10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0],
+[10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0,10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0, 5.0],
+[ 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0,10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0, 5.0,10.0],
+[10.0, 5.0, 0,   5.0,10.0, 5.0,10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0, 5.0,10.0, 5.0],
+[ 5.0, 0,   5.0,10.0, 5.0,10.0, 5.0,10.0, 5.0, 0,   5.0,10.0, 5.0, 5.0,10.0, 5.0,10.0],
+[ 0,   1,   1,   1,   1,   1,   1,   1,   0,   1,   1,   1,   1,   1,   1,   1,   0],
+[10.0, 5.0,10.0, 5.0,10.0, 5.0,10.0, 0,  10.0, 5.0,10.0, 5.0, 5.0,10.0, 5.0, 0,   5.0],
+[ 5.0,10.0, 5.0,10.0, 5.0,10.0, 0,  10.0, 5.0,10.0, 5.0, 5.0,10.0, 5.0, 0,   5.0,10.0],
+]];
 
 var bar_complexity = [
 	// little movement, mid-register singing
@@ -49,10 +69,8 @@ var bar_complexity = [
 	(dur:1, movement:0, min:-16,max:-16, complex:0, speed:1, loud:0)        // last  note is a long one
 ];
 
-/*var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/composite mezzo.wav');
-var voice_gap = 4;
-var voice_start = 0.5;*/
 //var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice forte.wav');
+//var bufp = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/Alex voice piano.wav');
 var buf = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice forte.wav');
 var bufp = Buffer.read(s,'/home/creo/Public/Creo_Animam/univox/alex/sounds/Alex voice piano.wav');
 
@@ -61,15 +79,19 @@ var voice_start = 1;
 
 var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, amp_middle = 0.5, amp_end = 0.5|
 	var actual_sustain = sustain.min(2);
-	var env = Env.new([0, amp, amp_middle, amp_end, 0], [0.05, actual_sustain / 2 - 0.025, actual_sustain / 2 - 0.06, 0.01]);
-	var e = (EnvGen.kr(env) - 0.03).max(0);
-	var ep = (EnvGen.kr(env) * 2).min(0.06 - EnvGen.kr(env) * 2).max(0);
+	var start_length = (actual_sustain * 0.1).min(0.05);
+	var end_length = (actual_sustain * 0.1).min(0.05);
+	var middle_length = actual_sustain - start_length - end_length;
+		var env = Env.new([0, amp, amp_middle, amp_end, 0], [start_length, middle_length / 2, middle_length / 2, end_length]);
+	var e = (EnvGen.kr(env, doneAction:2) - 0.03).max(0);
+	var ep = (EnvGen.kr(env, doneAction:2) * 2).min(0.06 - EnvGen.kr(env) * 2).max(0);
 	var start = (voice_gap*(degree+16).min(24).max(0)+voice_start)*44100;
 	var phase = LFTri.ar(0.25,-1,44100,start);
 	var phasep = LFTri.ar(0.25,-1,44100,start);
 	var bufrd = BufRd.ar(2, buf.bufnum, phase);
 	var bufrdp = BufRd.ar(2, bufp.bufnum, phasep);
-	Out.ar(0, FreeVerb.ar((bufrd * 80 * e) + (bufrdp * 80 * ep),0.85,0.7), doneAction:2)
+//	Out.ar(0, FreeVerb.ar((bufrd * 80 * e) + (bufrdp * 80 * ep),0.85,0.7), doneAction:2)
+	Out.ar(0, (bufrd * 80 * e) + (bufrdp * 80 * ep))
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1, amp_middle=0.1, amp_end=0.1, legato=1;
@@ -89,7 +111,7 @@ var jump = {arg d, prev_d, min, max, movement, bias_direction;
 		ok = ok.and(i.abs <= movement);
 		ok = ok.and((i != 0).or(d != prev_d));  // avoid three identical notes in a row
 		if(ok, {
-			var prob = next_prob[d % 8][i+8];
+			var prob = next_prob[prob_table][d % 8][i+8];
 			if (bias_direction == i.sign, {prob = prob * 2});
 			nonzero = true;
 			prob
@@ -354,5 +376,4 @@ if (graphics, {
 };
 
 s.options.memSize = 65536;
-s.boot;
-main.value();
+s.waitForBoot(main);
