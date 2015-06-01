@@ -1,8 +1,10 @@
+var main = {
 var graphics = true;
 var ww = 1920;
 var wh = 1080;
 var w;
 var colour = 0;
+var whitering = false;
 var circle_radius = 0;
 var cw = 64;
 var ch = 36;
@@ -21,7 +23,7 @@ var next_prob = [
 	[4.0, 6.0, 6.0, 0,   7.0, 9.0, 4.0, 5.0, 6.0, 4.0,10.0, 0,   5.0, 6.0, 7.0, 4.0, 9.0],
 	[3.0, 7.0, 0,   4.0, 6.0, 0.0, 6.0, 5.0, 8.0, 8.0, 0,  10.0, 2.0,10.0, 6.0, 7.0, 6.0],
 	[3.0, 0,   5.0,10.0, 6.0, 4.0, 6.0, 5.0, 6.0, 0,   5.0,10.0, 3.0, 4.0, 6.0, 6.0, 3.0],
-	[0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, ],
+	[0,   1,   1,   1,   1,   1,   1,   1,   0,   1,   1,   1,   1,   1,   1,   1,   0, ],
 	[4.0, 7.0, 9.0, 6.0, 4.0, 6.0, 5.0, 0,   3.0, 5.0, 9.0, 6.0, 4.0, 2.0, 6.0, 0,   4.0],
 	[5.0,10.0, 5.0, 6.0, 5.0, 6.0, 0,   5.0, 4.0,10.0, 2.0, 6.0, 4.0, 8.0, 0,   6.0, 5.0],
 ];
@@ -29,22 +31,22 @@ var next_prob = [
 var bar_complexity = [
 	// little movement, mid-register singing
 	(dur:2, movement:2, range:4, speed: 2, complex:0),   // 27
-	(dur:2, movement:2, range:8, speed: 4, complex:1),   // 28
-	(dur:2, movement:3, range:10, complex:1),   // 29
+	(dur:2, movement:2, range:8, speed: 4, complex:1, loud:0),   // 28
+	(dur:2, movement:3, range:10, complex:1, loud:0),   // 29
 	// growth and development, patterns and range expansion
-	(dur:2, movement:3, range:12, complex:2, flurries:0.2, bias:1),   // 30
-	(dur:2, movement:3, range:12,complex:3, flurries:0.2, bias:-1),   // 31
-	(dur:2, movement:4, range:12,complex:4, flurries:0.2, bias:-1),   // 32
-	(dur:2, movement:5, range:12,complex:4, flurries:0.2, bias:-1, loud:1),   // 33
+	(dur:2, movement:5, min:-8,max:8, complex:2, flurries:0.2, bias:1, loud:0, white:true),   // 30
+	(dur:2, movement:6, min:-8,max:8,complex:3, flurries:0.2, bias:-1, loud:-1),   // 31
+	(dur:2, movement:7, min:-8,max:8,complex:4, flurries:0.2, bias:-1, loud:0),   // 32
+	(dur:2, movement:8, min:-8,max:8,complex:4, flurries:0.2, bias:-1, loud:1),   // 33
 	// peak of solo, high range or alternating very big intervals
-	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1, loud:2),   // 34
-	(dur:1, movement:8, range:12,complex:5, flurries:0.2, bias:1, loud:0),   // 35
-	(dur:1, movement:8, range:12,complex:6, flurries:0.2, bias:1, loud:2),   // 36
-	(dur:1, movement:8, range:12,complex:6, flurries:0.5, bias:-1, loud:1),   // 37
+	(dur:1, movement:8, min:0,max:8,complex:5, flurries:0.2, bias:1, loud:2, white:true),   // 34
+	(dur:1, movement:8, min:0,max:8,complex:5, flurries:0.2, bias:1, loud:2),   // 35
+	(dur:1, movement:8, min:0,max:8,complex:6, flurries:0.2, bias:1, loud:2),   // 36
+	(dur:1, movement:8, min:0,max:8,complex:6, flurries:0.5, bias:-1, loud:2),   // 37
 	// slowing down, low register to audible low rumble
-	(dur:2, movement:3, min:-16,max:-5, complex:2, flurries:0.7),   // 38
-	(dur:2, movement:1, min:-16,max:-13, complex:2, flurries:0.8),   // also 38
-	(dur:1, movement:0, min:-16,max:-16, complex:0, speed:1)        // last  note is a long one
+	(dur:2, movement:3, min:-16,max:-5, complex:2, flurries:0.7, loud:1, white:true),   // 38
+	(dur:2, movement:1, min:-16,max:-13, complex:2, flurries:0.8, loud:1),   // also 38
+	(dur:1, movement:0, min:-16,max:-16, complex:0, speed:1, loud:0)        // last  note is a long one
 ];
 
 /*var buf = Buffer.read(s,Platform.resourceDir ++ '/sounds/alex/composite mezzo.wav');
@@ -59,7 +61,7 @@ var voice_start = 1;
 
 var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, amp_middle = 0.5, amp_end = 0.5|
 	var actual_sustain = sustain.min(2);
-	var env = Env.new([0, amp, amp_middle, amp_end, 0], [0.01, actual_sustain / 2 - 0.025, actual_sustain / 2 - 0.025, 0.01]);
+	var env = Env.new([0, amp, amp_middle, amp_end, 0], [0.05, actual_sustain / 2 - 0.025, actual_sustain / 2 - 0.06, 0.01]);
 	var e = (EnvGen.kr(env) - 0.03).max(0);
 	var ep = (EnvGen.kr(env) * 2).min(0.06 - EnvGen.kr(env) * 2).max(0);
 	var start = (voice_gap*(degree+16).min(24).max(0)+voice_start)*44100;
@@ -67,7 +69,7 @@ var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, am
 	var phasep = LFTri.ar(0.25,-1,44100,start);
 	var bufrd = BufRd.ar(2, buf.bufnum, phase);
 	var bufrdp = BufRd.ar(2, bufp.bufnum, phasep);
-	Out.ar(0, (bufrd * 40 * e) + (bufrdp * 40 * ep), doneAction:2)
+	Out.ar(0, FreeVerb.ar((bufrd * 80 * e) + (bufrdp * 80 * ep),0.85,0.7), doneAction:2)
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1, amp_middle=0.1, amp_end=0.1, legato=1;
@@ -94,13 +96,13 @@ var jump = {arg d, prev_d, min, max, movement, bias_direction;
 		}, 0)
 	});
 	if (nonzero,
-	{
-		d = d + (-8..8).wchoose(probs.normalizeSum);
+		{
+			d = d + (-8..8).wchoose(probs.normalizeSum);
 			if (d > max, {d = d * 0.5 + (max * 0.5)});
 			if (d < min, {d = d * 0.5 + (min * 0.5)});
 			d.asInteger
-	}, {
-		if (d > max, max, min)
+		}, {
+			if (d > max, max, min)
 	});
 };
 
@@ -109,6 +111,8 @@ var tweak_dur = {arg dur, t;
 	var t1 = 4 * (t + dur);
 	if (t0.floor != t1.floor, t1.floor / 4 - t, dur)
 };
+
+var avoid_long_note = {|degree| degree % 8 == 1};
 
 var do_bar = {arg d, complexity;
 	var min, max, t, amp, prev_d, prev_legato, prev_amp_mul;
@@ -132,6 +136,7 @@ var do_bar = {arg d, complexity;
 		var legato = 1;
 		var bias_direction = complexity.bias;
 		var amp_mul_target = 1;
+		if (min == max, {d = min});
 		prev_d = d;
 		amp = 0.01;
 		amp_end = amp;
@@ -141,6 +146,7 @@ var do_bar = {arg d, complexity;
 		if (complexity.complex >= 1, {dur = [1/2,1,2].choose * dur});
 		if (complexity.complex <= 4, {dur = tweak_dur.value(dur, t)});
 		if ((complexity.flurries != nil).and{1.0.rand < complexity.flurries}, {dur = 1/32});
+		if (avoid_long_note.value(d), {dur = dur.min(1/8)});
 		if ((complexity.complex >= 2).and(1.0.rand < 0.2), {
 			amp = 0.02.rand;
 			amp_end = 0.02.rand;
@@ -152,6 +158,7 @@ var do_bar = {arg d, complexity;
 		//if (complexity.complex >= 5, {dur = [dur / 4, dur / 2, dur, dur * 2].choose});
 		//if (complexity.complex >= 6, {dur = dur * 0.25 + (dur.rand * 0.75)});
 		if (dur > 0.25, {amp_middle = amp_middle * 2});
+		whitering = (t < 0.5).and(complexity.white == true);
 		note.value(d, dur, amp * amp_mul, amp_middle * amp_mul, amp_end * amp_mul, legato).yield;
 		d = jump.value(prev_d, prev_prev_d, min, max, complexity.movement, bias_direction);
 		t = t + dur;
@@ -190,13 +197,14 @@ var play_with_graphics = {|t|
 	})
 };
 
-var palette = {|degree, alpha=1|
+var palette = {|degree, alpha=1, white=false|
+	if (white, Color.white, {
 	if (degree < -8, {Color.new(1, (degree+16)/8, 0, alpha)  //red to yellow
 		},{
 		if (degree < 0, {Color.new((0-degree)/8,1,(8+degree)/8, alpha)  //yellow to cyan
 			},{
 			Color.new(0,(8-degree)/8,1, alpha)  //cyan to blue
-})})
+		})})})
 };
 
 
@@ -297,7 +305,7 @@ var tree_redraw_func = {
 
 	if (final_fade, {intensity = 0.1});
 
-	Pen.color = palette.value(colour, intensity);
+	Pen.color = palette.value(colour, intensity, whitering);
        Pen.strokeOval(
             Rect(cx - circle_radius, cy - circle_radius, 2 * circle_radius, 2 * circle_radius)
     );
@@ -343,3 +351,8 @@ if (graphics, {
 	//{play_with_graphics.value(tune)}.asRoutine.play;
 	//fork {play_with_graphics.value(tune)};
 }, {tune.play});
+};
+
+s.options.memSize = 65536;
+s.boot;
+main.value();
