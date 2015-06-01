@@ -50,6 +50,7 @@ var next_prob = [[],
 
 var bar_complexity = [
 	// little movement, mid-register singing
+	(dur:1/2, movement:0, min:0,max:0, speed:1, complex:0, loud:1),   // start off on Af
 	(dur:2, movement:2, range:4, speed: 2, complex:0),   // 27
 	(dur:2, movement:2, range:8, speed: 4, complex:1, loud:0),   // 28
 	(dur:2, movement:3, range:10, complex:1, loud:0),   // 29
@@ -81,8 +82,9 @@ var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, am
 	var actual_sustain = sustain.min(2);
 	var start_length = (actual_sustain * 0.1).min(0.05);
 	var end_length = (actual_sustain * 0.1).min(0.05);
+	var reverb_length = 2;
 	var middle_length = actual_sustain - start_length - end_length;
-		var env = Env.new([0, amp, amp_middle, amp_end, 0], [start_length, middle_length / 2, middle_length / 2, end_length]);
+		var env = Env.new([0, amp, amp_middle, amp_end, 0, 0], [start_length, middle_length / 2, middle_length / 2, end_length, reverb_length]);
 	var e = (EnvGen.kr(env, doneAction:2) - 0.03).max(0);
 	var ep = (EnvGen.kr(env, doneAction:2) * 2).min(0.06 - EnvGen.kr(env) * 2).max(0);
 	var start = (voice_gap*(degree+16).min(24).max(0)+voice_start)*44100;
@@ -90,8 +92,8 @@ var voices = SynthDef(\voices, { |freq = 440, degree, sustain = 1, amp = 0.5, am
 	var phasep = LFTri.ar(0.25,-1,44100,start);
 	var bufrd = BufRd.ar(2, buf.bufnum, phase);
 	var bufrdp = BufRd.ar(2, bufp.bufnum, phasep);
-//	Out.ar(0, FreeVerb.ar((bufrd * 80 * e) + (bufrdp * 80 * ep),0.85,0.7), doneAction:2)
-	Out.ar(0, (bufrd * 80 * e) + (bufrdp * 80 * ep))
+	Out.ar(0, FreeVerb.ar((bufrd * 80 * e) + (bufrdp * 80 * ep),0.85,0.7), doneAction:2)
+//	Out.ar(0, (bufrd * 80 * e) + (bufrdp * 80 * ep))
 }).add;
 
 var note = {arg degree, dur=1/16, amp=0.1, amp_middle=0.1, amp_end=0.1, legato=1;
